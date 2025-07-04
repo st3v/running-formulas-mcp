@@ -1,0 +1,6 @@
+# Core MCP dependencies
+fastmcp>=2.10.1
+
+# Development dependencies (optional)
+pytest>=8.0.0
+ruff>=0.0.290
