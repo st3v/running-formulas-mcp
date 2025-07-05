@@ -9,7 +9,7 @@ from running_formulas_mcp.server import mcp
 
 def test_mcp_server_tools():
     """Test that the MCP server lists exactly the expected tools"""
-    expected_tools = {"calculate_vdot", "training_paces"}
+    expected_tools = {"calculate_vdot", "training_paces", "predict_race_time"}
     actual_tools = set(mcp._tool_manager._tools.keys())
 
     # Check that we have exactly the expected tools
@@ -72,3 +72,30 @@ def test_training_paces():
         result = fn(vdot)
         assert isinstance(result, dict)
         assert result == expected
+
+def test_predict_race_time():
+    """Test race time prediction functionality"""
+    fn = get_actual_function('predict_race_time')
+    
+    # Test case: 5K in 25:00 (1500 seconds) -> predict 10K
+    result = fn(5000, 1500, 10000)
+    
+    expected = {
+        "riegel": {
+            "value": "00:52:07",
+            "format": "HH:MM:SS",
+            "time_seconds": 3127.4
+        },
+        "daniels": {
+            "value": "00:47:36",
+            "format": "HH:MM:SS",
+            "time_seconds": 2856.6
+        },
+        "average": {
+            "value": "00:49:52",
+            "format": "HH:MM:SS",
+            "time_seconds": 2992.0
+        }
+    }
+    
+    assert result == expected

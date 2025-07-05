@@ -1,6 +1,51 @@
 from fastmcp import FastMCP
+import math
 
 mcp = FastMCP(name="RunningFormulasMCP")
+
+def _calculate_vdot_from_performance(distance: float, time: float) -> float:
+    """
+    Helper function to calculate VDOT from distance and time.
+
+    Args:
+        distance: Distance in meters.
+        time: Time in seconds.
+
+    Returns:
+        float: The calculated VDOT value.
+    """
+    t_min = time / 60
+    v = distance / t_min
+    vo2 = -4.6 + 0.182258 * v + 0.000104 * v * v
+    vo2max = 0.8 + 0.1894393 * math.exp(-0.012778 * t_min) + 0.2989558 * math.exp(-0.1932605 * t_min)
+    return vo2 / vo2max
+
+def _get_pace_velocity(vdot_val: float) -> float:
+    """Calculate velocity from VDOT using Jack Daniels formula.
+    
+    Args:
+        vdot_val: VDOT value.
+        
+    Returns:
+        float: Velocity in meters per minute.
+    """
+    return 29.54 + 5.000663 * vdot_val - 0.007546 * (vdot_val ** 2)
+
+def _get_custom_effort_pace(vdot_val: float, distance: float, effort_percentage: float) -> float:
+    """Calculate pace for given effort percentage.
+    
+    Args:
+        vdot_val: VDOT value.
+        distance: Distance in meters.
+        effort_percentage: Effort as percentage (0.0 to 1.0).
+        
+    Returns:
+        float: Time in minutes for the given distance.
+    """
+    adjusted_vdot = vdot_val * effort_percentage
+    velocity = _get_pace_velocity(adjusted_vdot)  # meters per minute
+    pace_per_meter = 1 / velocity  # minutes per meter
+    return pace_per_meter * distance  # minutes per distance
 
 @mcp.tool
 def calculate_vdot(distance: float, time: float) -> dict:
@@ -15,19 +60,9 @@ def calculate_vdot(distance: float, time: float) -> dict:
         dict:
             vdot (float): The calculated VDOT value, representing the runner's aerobic capacity based on the input distance and time.
     """
-    import math
-    t_min = time / 60
-
-    v = distance / t_min
-
-    vo2 = -4.6 + 0.182258 * v + 0.000104 * v * v
-
-    vo2max = 0.8 + 0.1894393 * math.exp(-0.012778 * t_min) + 0.2989558 * math.exp(-0.1932605 * t_min)
-
-    vdot = round(vo2/vo2max, 1)
-
+    vdot = _calculate_vdot_from_performance(distance, time)
     return {
-        "vdot": vdot
+        "vdot": round(vdot, 1)
     }
 
 @mcp.tool
@@ -46,7 +81,6 @@ def training_paces(vdot: float) -> dict:
             interval (dict): Recommended interval pace with value and format.
             repetition (dict): Recommended repetition pace with value and format.
     """
-    import math
 
     # Constants
     SLOW_VDOT_LIMIT = 39
@@ -60,16 +94,6 @@ def training_paces(vdot: float) -> dict:
         """Get adjusted VDOT for slow runners."""
         return vdot_val * 2 / 3 + 13
 
-    def _get_pace_velocity(vdot_val):
-        """Calculate velocity from VDOT using Jack Daniels formula."""
-        return 29.54 + 5.000663 * vdot_val - 0.007546 * (vdot_val ** 2)
-
-    def _get_custom_effort_pace(vdot_val, distance, effort_percentage):
-        """Calculate pace for given effort percentage."""
-        adjusted_vdot = vdot_val * effort_percentage
-        velocity = _get_pace_velocity(adjusted_vdot)  # meters per minute
-        pace_per_meter = 1 / velocity  # minutes per meter
-        return pace_per_meter * distance  # minutes per distance
 
     def _get_marathon_velocity(vdot_val):
         """Calculate marathon velocity using iterative method."""
@@ -179,6 +203,64 @@ def training_paces(vdot: float) -> dict:
         "repetition": {
             "value": pace_to_min_km(repetition),
             "format": "min:sec/km"
+        }
+    }
+
+@mcp.tool
+def predict_race_time(current_distance: float, current_time: float, target_distance: float) -> dict:
+    """
+    Predict race time for a target distance based on a current race performance.
+    Uses Riegel's formula and Jack Daniels' equivalent performance methodology.
+
+    Args:
+        current_distance: Distance of known performance in meters.
+        current_time: Time of known performance in seconds.
+        target_distance: Distance for race time prediction in meters.
+
+    Returns:
+        dict:
+            riegel (dict): Riegel's formula prediction with value, format, and time_seconds.
+            daniels (dict): Daniels' VDOT method prediction with value, format, and time_seconds.
+            average (dict): Average of both methods with value, format, and time_seconds.
+    """
+    def format_time(seconds):
+        """Format seconds into HH:MM:SS format."""
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        secs = int(seconds % 60)
+        
+        return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+    # Riegel's formula: T2 = T1 * (D2/D1)^1.06
+    riegel_exponent = 1.06
+    riegel_time = current_time * ((target_distance / current_distance) ** riegel_exponent)
+
+    # Daniels' method using VDOT
+    # Get VDOT from current performance
+    vdot = _calculate_vdot_from_performance(current_distance, current_time)
+    
+    # Calculate time for target distance using 100% effort (1.0)
+    daniels_time_minutes = _get_custom_effort_pace(vdot, target_distance, 1.0)
+    daniels_time = daniels_time_minutes * 60  # Convert minutes to seconds
+
+    # Calculate average time of both methods
+    average_time = (riegel_time + daniels_time) / 2
+
+    return {
+        "riegel": {
+            "value": format_time(riegel_time),
+            "format": "HH:MM:SS",
+            "time_seconds": round(riegel_time, 1)
+        },
+        "daniels": {
+            "value": format_time(daniels_time),
+            "format": "HH:MM:SS",
+            "time_seconds": round(daniels_time, 1)
+        },
+        "average": {
+            "value": format_time(average_time),
+            "format": "HH:MM:SS",
+            "time_seconds": round(average_time, 1)
         }
     }
 
