@@ -37,3 +37,24 @@ def pace_in_min_km(pace_per_km: float) -> str:
         seconds = 0
 
     return f"{minutes}:{seconds:02d}"
+
+
+def pace_in_min_sec(pace_minutes: float) -> str:
+    """
+    Format decimal minutes to pace string in M:SS format.
+    
+    Args:
+        pace_minutes: Pace in decimal minutes.
+        
+    Returns:
+        str: Formatted pace as "M:SS".
+    """
+    minutes = int(pace_minutes)
+    seconds = int((pace_minutes - minutes) * 60)
+    
+    # Handle rounding edge case
+    if seconds >= 60:
+        minutes += 1
+        seconds = 0
+        
+    return f"{minutes}:{seconds:02d}"

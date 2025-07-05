@@ -1,12 +1,14 @@
 
 # running-formulas-mcp MCP server
 
-An MCP server with tools to calculate VDOT and recommended training paces based on [Jack Daniels](https://www.coacheseducation.com/endur/jack-daniels-nov-00.php).
+An MCP server with tools for running calculations including VDOT, training paces, race time predictions, and pace conversions based on [Jack Daniels](https://www.coacheseducation.com/endur/jack-daniels-nov-00.php) methodology and others.
 
 ## Features
 
 - **VDOT Calculation**: Calculate VDOT from a given distance (meters) and time (seconds) using Jack Daniels' formula.
 - **Training Paces**: Get recommended training paces (Easy, Marathon, Threshold, Interval, Repetition) for a given VDOT.
+- **Race Time Predictions**: Predict race times for different distances using Riegel's formula and Jack Daniels' VDOT method.
+- **Pace Conversions**: Convert between different pace and speed formats (min/km, min/mile, km/h, mph).
 
 ## Tools
 
@@ -28,6 +30,27 @@ An MCP server with tools to calculate VDOT and recommended training paces based 
       - `interval` (object): Interval pace
       - `repetition` (object): Repetition pace
     - All paces include both `value` (formatted as "min:sec/km") and `format` fields
+
+- `predict_race_time`: Predicts race times for different distances based on a current performance.
+  - **Input:**
+    - `current_distance` (number, meters)
+    - `current_time` (number, seconds)
+    - `target_distance` (number, meters)
+  - **Output:**
+    - `riegel` (object): Prediction using Riegel's formula with value, format, and time_seconds
+    - `daniels` (object): Prediction using Jack Daniels' VDOT method with value, format, and time_seconds
+    - `average` (object): Average of both methods with value, format, and time_seconds
+    - All times formatted as "HH:MM:SS"
+
+- `convert_pace`: Converts between different pace and speed units.
+  - **Input:**
+    - `value` (number): The numeric value to convert
+    - `from_unit` (string): Source unit ("min_km", "min_mile", "kmh", "mph")
+    - `to_unit` (string): Target unit ("min_km", "min_mile", "kmh", "mph")
+  - **Output:**
+    - `value` (float): Converted numeric value
+    - `formatted` (string): Human-readable formatted result
+    - `unit` (string): Target unit descriptor
 
 ## Usage
 
@@ -66,6 +89,58 @@ This returns structured pace data like:
   "threshold": {"value": "4:50", "format": "min:sec/km"},
   "interval": {"value": "4:32", "format": "min:sec/km"},
   "repetition": {"value": "4:26", "format": "min:sec/km"}
+}
+```
+
+### Example: Predict 10K time from 5K performance
+
+Call the `predict_race_time` tool with:
+
+```
+{
+  "name": "predict_race_time",
+  "arguments": { "current_distance": 5000, "current_time": 1500, "target_distance": 10000 }
+}
+```
+
+This returns race time predictions:
+```json
+{
+  "riegel": {
+    "value": "00:52:07",
+    "format": "HH:MM:SS",
+    "time_seconds": 3127.4
+  },
+  "daniels": {
+    "value": "00:47:36", 
+    "format": "HH:MM:SS",
+    "time_seconds": 2856.6
+  },
+  "average": {
+    "value": "00:49:52",
+    "format": "HH:MM:SS", 
+    "time_seconds": 2992.0
+  }
+}
+```
+
+### Example: Convert pace from min/km to min/mile
+
+Call the `convert_pace` tool with:
+
+```
+{
+  "name": "convert_pace",
+  "arguments": { "value": 5.0, "from_unit": "min_km", "to_unit": "min_mile" }
+}
+```
+
+This returns the converted pace:
+```json
+{
+  "value": 8.047,
+  "formatted": "8:02",
+  "unit": "min_mile"
 }
 ```
 

@@ -1,6 +1,16 @@
 from fastmcp import FastMCP
 
-from .core.formatting import time_in_hhmmss, pace_in_min_km
+from .core.formatting import time_in_hhmmss, pace_in_min_km, pace_in_min_sec
+from .core.conversions import (
+    pace_min_km_to_min_mile,
+    pace_min_mile_to_min_km,
+    pace_to_speed_kmh,
+    speed_kmh_to_pace,
+    pace_to_speed_mph,
+    speed_mph_to_pace,
+    kmh_to_mph,
+    mph_to_kmh
+)
 from .formulas.riegel import predict_time_riegel
 from .formulas.daniels import (
     calculate_vdot_from_performance,
@@ -130,6 +140,79 @@ def predict_race_time(current_distance: float, current_time: float, target_dista
             "format": "HH:MM:SS",
             "time_seconds": round(average_time, 1)
         }
+    }
+
+@mcp.tool
+def convert_pace(value: float, from_unit: str, to_unit: str) -> dict:
+    """
+    Convert between different pace and speed units.
+
+    Args:
+        value: The numeric value to convert.
+        from_unit: Source unit ("min_km", "min_mile", "kmh", "mph").
+        to_unit: Target unit ("min_km", "min_mile", "kmh", "mph").
+
+    Returns:
+        dict:
+            value (float): Converted numeric value.
+            formatted (str): Human-readable formatted result.
+            unit (str): Target unit descriptor.
+
+    Raises:
+        ValueError: If from_unit or to_unit are not valid, or if conversion is not supported.
+    """
+    # Validate units
+    valid_units = {"min_km", "min_mile", "kmh", "mph"}
+    if from_unit not in valid_units:
+        raise ValueError(f"Invalid from_unit '{from_unit}'. Must be one of: {valid_units}")
+    if to_unit not in valid_units:
+        raise ValueError(f"Invalid to_unit '{to_unit}'. Must be one of: {valid_units}")
+
+    # Conversion function mapping - single functions, chains, or empty chains
+    conversion_map = {
+        # Same unit conversions (empty chains)
+        ("min_km", "min_km"): [],
+        ("min_mile", "min_mile"): [],
+        ("kmh", "kmh"): [],
+        ("mph", "mph"): [],
+
+        # Direct conversions
+        ("min_km", "min_mile"): [pace_min_km_to_min_mile],
+        ("min_mile", "min_km"): [pace_min_mile_to_min_km],
+        ("min_km", "kmh"): [pace_to_speed_kmh],
+        ("kmh", "min_km"): [speed_kmh_to_pace],
+        ("min_mile", "mph"): [pace_to_speed_mph],
+        ("mph", "min_mile"): [speed_mph_to_pace],
+        ("kmh", "mph"): [kmh_to_mph],
+        ("mph", "kmh"): [mph_to_kmh],
+
+        # Cross conversions via function chains
+        ("min_km", "mph"): [pace_to_speed_kmh, kmh_to_mph],
+        ("mph", "min_km"): [mph_to_kmh, speed_kmh_to_pace],
+        ("min_mile", "kmh"): [pace_to_speed_mph, mph_to_kmh],
+        ("kmh", "min_mile"): [kmh_to_mph, speed_mph_to_pace],
+    }
+
+    # Look up conversion functions
+    conversion_key = (from_unit, to_unit)
+    if conversion_key not in conversion_map:
+        raise ValueError(f"Conversion from '{from_unit}' to '{to_unit}' not supported")
+
+    # Apply function chain
+    result_value = value
+    for func in conversion_map[conversion_key]:
+        result_value = func(result_value)
+
+    # Format the result
+    if to_unit in ["min_km", "min_mile"]:
+        formatted = pace_in_min_sec(result_value)
+    else:
+        formatted = f"{result_value:.1f}"
+
+    return {
+        "value": round(result_value, 3),
+        "formatted": formatted,
+        "unit": to_unit
     }
 
 
