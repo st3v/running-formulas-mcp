@@ -180,7 +180,3 @@ Desktop.ini
 *.bak
 *.swp
 *.swo
-
-# Project specific
-reference.js
-backlog.md
