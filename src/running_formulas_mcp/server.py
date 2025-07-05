@@ -37,6 +37,11 @@ def calculate_vdot(distance: float, time: float) -> dict:
         dict:
             vdot (float): The calculated VDOT value, representing the runner's aerobic capacity based on the input distance and time.
     """
+    if distance <= 0:
+        raise ValueError("Distance must be positive")
+    if time <= 0:
+        raise ValueError("Time must be positive")
+    
     vdot = calculate_vdot_from_performance(distance, time)
     return {
         "vdot": round(vdot, 1)
@@ -58,6 +63,9 @@ def training_paces(vdot: float) -> dict:
             interval (dict): Recommended interval pace with value and format.
             repetition (dict): Recommended repetition pace with value and format.
     """
+    if vdot <= 0:
+        raise ValueError("VDOT must be positive")
+    
     # Constants
     DISTANCE_KM = 1000  # Calculate for 1 km (1000 meters)
 
@@ -115,6 +123,13 @@ def predict_race_time(current_distance: float, current_time: float, target_dista
             daniels (dict): Daniels' VDOT method prediction with value, format, and time_seconds.
             average (dict): Average of both methods with value, format, and time_seconds.
     """
+    if current_distance <= 0:
+        raise ValueError("Current distance must be positive")
+    if current_time <= 0:
+        raise ValueError("Current time must be positive")
+    if target_distance <= 0:
+        raise ValueError("Target distance must be positive")
+    
     # Use Riegel's formula
     riegel_time = predict_time_riegel(current_distance, current_time, target_distance)
 

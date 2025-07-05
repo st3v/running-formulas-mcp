@@ -44,7 +44,21 @@ def test_calculate_vdot():
         assert isinstance(result["vdot"], float)
         assert result["vdot"] == expected_vdot
 
+    # Negative test cases: invalid distance and time values
+    negative_test_cases = [
+        (0, 1500),      # Zero distance
+        (-5000, 1500),  # Negative distance
+        (5000, 0),      # Zero time
+        (5000, -1500),  # Negative time
+    ]
+
+    for distance, time in negative_test_cases:
+        with raises(ValueError):
+            fn(distance, time)
+
 def test_training_paces():
+    fn = get_actual_function('training_paces')
+
     test_cases = [
         (38.3, {
             "easy": {
@@ -69,37 +83,79 @@ def test_training_paces():
     ]
 
     for vdot, expected in test_cases:
-        fn = get_actual_function('training_paces')
         result = fn(vdot)
         assert isinstance(result, dict)
         assert result == expected
+
+    # Negative test cases: invalid VDOT values
+    negative_test_cases = [
+        0,      # Zero VDOT
+        -10,    # Negative VDOT
+        -38.3,  # Negative valid VDOT
+    ]
+
+    for vdot in negative_test_cases:
+        with raises(ValueError):
+            fn(vdot)
+
+    # Edge cases: very high/low but valid VDOT values
+    edge_case_vdots = [
+        10.0,   # Very low VDOT
+        100.0,  # Very high VDOT
+    ]
+
+    for vdot in edge_case_vdots:
+        result = fn(vdot)
+        assert isinstance(result, dict)
+        assert "easy" in result
+        assert "marathon" in result
+        assert "threshold" in result
+        assert "interval" in result
+        assert "repetition" in result
 
 def test_predict_race_time():
     """Test race time prediction functionality"""
     fn = get_actual_function('predict_race_time')
 
-    # Test case: 5K in 25:00 (1500 seconds) -> predict 10K
-    result = fn(5000, 1500, 10000)
+    # Positive test cases
+    test_cases = [
+        # (current_distance, current_time, target_distance, expected_result)
+        (5000, 1500, 10000, {
+            "riegel": {
+                "value": "00:52:07",
+                "format": "HH:MM:SS",
+                "time_seconds": 3127.4
+            },
+            "daniels": {
+                "value": "00:47:36",
+                "format": "HH:MM:SS",
+                "time_seconds": 2856.6
+            },
+            "average": {
+                "value": "00:49:52",
+                "format": "HH:MM:SS",
+                "time_seconds": 2992.0
+            }
+        })
+    ]
 
-    expected = {
-        "riegel": {
-            "value": "00:52:07",
-            "format": "HH:MM:SS",
-            "time_seconds": 3127.4
-        },
-        "daniels": {
-            "value": "00:47:36",
-            "format": "HH:MM:SS",
-            "time_seconds": 2856.6
-        },
-        "average": {
-            "value": "00:49:52",
-            "format": "HH:MM:SS",
-            "time_seconds": 2992.0
-        }
-    }
+    for current_distance, current_time, target_distance, expected in test_cases:
+        result = fn(current_distance, current_time, target_distance)
+        assert result == expected
 
-    assert result == expected
+    # Negative test cases: invalid distance and time values
+    negative_test_cases = [
+        (0, 1500, 10000),      # Zero current distance
+        (-5000, 1500, 10000),  # Negative current distance
+        (5000, 0, 10000),      # Zero current time
+        (5000, -1500, 10000),  # Negative current time
+        (5000, 1500, 0),       # Zero target distance
+        (5000, 1500, -10000),  # Negative target distance
+    ]
+
+    for current_distance, current_time, target_distance in negative_test_cases:
+        with raises(ValueError):
+            fn(current_distance, current_time, target_distance)
 
 def test_convert_pace():
     """Test pace conversion functionality"""
