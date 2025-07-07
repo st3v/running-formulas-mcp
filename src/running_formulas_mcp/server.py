@@ -21,11 +21,20 @@ from .formulas.daniels import (
     get_repetition_pace,
     get_marathon_pace
 )
+from .formulas.mcmillan import (
+    calculate_vlt,
+    calculate_cv,
+    calculate_vvo2,
+    format_pace_ms,
+    predict_race_times,
+    training_paces,
+    heart_rate_zones
+)
 
 mcp = FastMCP(name="RunningFormulasMCP")
 
 @mcp.tool
-def calculate_vdot(distance: float, time: float) -> dict:
+def daniels_calculate_vdot(distance: float, time: float) -> dict:
     """
     Calculate VDOT according to Jack Daniels.
 
@@ -41,14 +50,14 @@ def calculate_vdot(distance: float, time: float) -> dict:
         raise ValueError("Distance must be positive")
     if time <= 0:
         raise ValueError("Time must be positive")
-    
+
     vdot = calculate_vdot_from_performance(distance, time)
     return {
         "vdot": round(vdot, 1)
     }
 
 @mcp.tool
-def training_paces(vdot: float) -> dict:
+def daniels_calculate_training_paces(vdot: float) -> dict:
     """
     Get recommended training paces for a given VDOT, based on Jack Daniels' formulas.
 
@@ -65,7 +74,7 @@ def training_paces(vdot: float) -> dict:
     """
     if vdot <= 0:
         raise ValueError("VDOT must be positive")
-    
+
     # Constants
     DISTANCE_KM = 1000  # Calculate for 1 km (1000 meters)
 
@@ -81,36 +90,36 @@ def training_paces(vdot: float) -> dict:
         "easy": {
             "lower": {
                 "value": pace_in_min_km(easy_fast),
-                "format": "min:sec/km"
+                "format": "MM:SS/km"
             },
             "upper": {
                 "value": pace_in_min_km(easy_slow),
-                "format": "min:sec/km"
+                "format": "MM:SS/km"
             }
         },
         "marathon": {
             "value": pace_in_min_km(marathon),
-            "format": "min:sec/km"
+            "format": "MM:SS/km"
         },
         "threshold": {
             "value": pace_in_min_km(threshold),
-            "format": "min:sec/km"
+            "format": "MM:SS/km"
         },
         "interval": {
             "value": pace_in_min_km(interval),
-            "format": "min:sec/km"
+            "format": "MM:SS/km"
         },
         "repetition": {
             "value": pace_in_min_km(repetition),
-            "format": "min:sec/km"
+            "format": "MM:SS/km"
         }
     }
 
 @mcp.tool
-def predict_race_time(current_distance: float, current_time: float, target_distance: float) -> dict:
+def daniels_predict_race_time(current_distance: float, current_time: float, target_distance: float) -> dict:
     """
     Predict race time for a target distance based on a current race performance.
-    Uses Riegel's formula and Jack Daniels' equivalent performance methodology.
+    Uses Jack Daniels' equivalent performance methodology.
 
     Args:
         current_distance: Distance of known performance in meters.
@@ -118,10 +127,7 @@ def predict_race_time(current_distance: float, current_time: float, target_dista
         target_distance: Distance for race time prediction in meters.
 
     Returns:
-        dict:
-            riegel (dict): Riegel's formula prediction with value, format, and time_seconds.
-            daniels (dict): Daniels' VDOT method prediction with value, format, and time_seconds.
-            average (dict): Average of both methods with value, format, and time_seconds.
+        dict: Daniels' VDOT method prediction with value, format, and time_seconds.
     """
     if current_distance <= 0:
         raise ValueError("Current distance must be positive")
@@ -129,33 +135,131 @@ def predict_race_time(current_distance: float, current_time: float, target_dista
         raise ValueError("Current time must be positive")
     if target_distance <= 0:
         raise ValueError("Target distance must be positive")
-    
-    # Use Riegel's formula
-    riegel_time = predict_time_riegel(current_distance, current_time, target_distance)
 
-    # Use Daniels' VDOT method
-    daniels_time = predict_time_daniels(current_distance, current_time, target_distance)
-
-    # Calculate average time of both methods
-    average_time = (riegel_time + daniels_time) / 2
+    time = predict_time_daniels(current_distance, current_time, target_distance)
 
     return {
-        "riegel": {
-            "value": time_in_hhmmss(riegel_time),
-            "format": "HH:MM:SS",
-            "time_seconds": round(riegel_time, 1)
-        },
-        "daniels": {
-            "value": time_in_hhmmss(daniels_time),
-            "format": "HH:MM:SS",
-            "time_seconds": round(daniels_time, 1)
-        },
-        "average": {
-            "value": time_in_hhmmss(average_time),
-            "format": "HH:MM:SS",
-            "time_seconds": round(average_time, 1)
-        }
+        "value": time_in_hhmmss(time),
+        "format": "HH:MM:SS",
+        "time_seconds": round(time, 1)
     }
+
+@mcp.tool
+def riegel_predict_race_time(current_distance: float, current_time: float, target_distance: float) -> dict:
+    """
+    Predict race time for a target distance based on a current race performance.
+    Uses Riegel's formula.
+
+    Args:
+        current_distance: Distance of known performance in meters.
+        current_time: Time of known performance in seconds.
+        target_distance: Distance for race time prediction in meters.
+
+    Returns:
+        dict: Riegel's formula prediction with value, format, and time_seconds.
+    """
+    if current_distance <= 0:
+        raise ValueError("Current distance must be positive")
+    if current_time <= 0:
+        raise ValueError("Current time must be positive")
+    if target_distance <= 0:
+        raise ValueError("Target distance must be positive")
+
+    time = predict_time_riegel(current_distance, current_time, target_distance)
+    return {
+        "value": time_in_hhmmss(time),
+        "format": "HH:MM:SS",
+        "time_seconds": round(time, 1)
+    }
+
+@mcp.tool
+def mcmillan_calculate_velocity_markers(distance: float, time: float) -> dict:
+    """
+    Calculate velocity markers (vLT, CV, vVO2) from a race performance using McMillan methodology.
+
+    Args:
+        distance: Race distance in meters
+        time: Race time in seconds
+
+    Returns:
+        Dictionary containing velocity markers with paces in MM:SS/km format
+    """
+    try:
+        vlt = calculate_vlt(distance, time)
+        cv = calculate_cv(distance, time)
+        vvo2 = calculate_vvo2(distance, time)
+
+        return {
+            "velocity_markers": {
+                "vLT": {
+                    "pace": format_pace_ms(vlt),
+                    "description": "Velocity at Lactate Threshold (vLT) - sustainable pace for ~1 hour"
+                },
+                "CV": {
+                    "pace": format_pace_ms(cv),
+                    "description": "Critical Velocity (CV) - theoretical maximum sustainable pace"
+                },
+                "vVO2": {
+                    "pace": format_pace_ms(vvo2),
+                    "description": "Velocity at VO2max (vVO2) - pace at maximum oxygen uptake"
+                }
+            }
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@mcp.tool
+def mcmillan_predict_race_times(distance: float, time: float) -> dict:
+    """
+    Predict race times for standard distances based on a single race performance using McMillan methodology.
+
+    Args:
+        distance: Race distance in meters
+        time: Race time in seconds
+
+    Returns:
+        Dictionary containing predicted race times in HH:MM:SS format
+    """
+    try:
+        return predict_race_times(distance, time)
+    except Exception as e:
+        return {"error": str(e)}
+
+@mcp.tool
+def mcmillan_calculate_training_paces(distance: float, time: float) -> dict:
+    """
+    Calculate training paces for all zones based on a race performance using McMillan methodology.
+
+    Args:
+        distance: Race distance in meters
+        time: Race time in seconds
+
+    Returns:
+        Dictionary containing training paces organized by zones (endurance, stamina, speed, sprint)
+    """
+    try:
+        return training_paces(distance, time)
+    except Exception as e:
+        return {"error": str(e)}
+
+@mcp.tool
+def mcmillan_heart_rate_zones(age: int, resting_heart_rate: int, max_heart_rate: int = None) -> dict:
+    """
+    Calculate heart rate training zones based on age, resting heart rate, and optional max heart rate.
+    Uses McMillan methodology with multiple max HR estimation formulas and both HRMAX and HRRESERVE methods.
+
+    Args:
+        age: Runner's age in years
+        resting_heart_rate: Resting heart rate in BPM
+        max_heart_rate: Optional maximum heart rate in BPM (if None, will be estimated)
+
+    Returns:
+        Dictionary containing estimated max HR, effective max HR, and training zones with both HRMAX and HRRESERVE calculations
+    """
+    try:
+        return heart_rate_zones(age, resting_heart_rate, max_heart_rate)
+    except Exception as e:
+        return {"error": str(e)}
 
 @mcp.tool
 def convert_pace(value: float, from_unit: str, to_unit: str) -> dict:
@@ -229,7 +333,6 @@ def convert_pace(value: float, from_unit: str, to_unit: str) -> dict:
         "formatted": formatted,
         "unit": to_unit
     }
-
 
 def main():
     """Main entry point for the console script."""

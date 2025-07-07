@@ -22,9 +22,12 @@ build: clean
 	hatch build
 
 test:
-	PYTHONPATH=src python -m pytest -vv
+	PYTHONPATH=src python -m pytest
 
 tests: test
+
+cover:
+	PYTHONPATH=src python -m pytest --cov=src
 
 lint:
 	ruff check .

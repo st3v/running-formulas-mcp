@@ -7,6 +7,7 @@ This document outlines potential additional running-related calculations that co
 - ✅ Training Pace Recommendations (Easy, Marathon, Threshold, Interval, Repetition)
 - ✅ Race Time Predictions (Riegel's formula + Daniels' VDOT method)
 - ✅ Pace Conversions (min/km ↔ min/mile ↔ mph ↔ km/h)
+- ✅ McMillan Running Calculator (Critical Velocity based race predictions and training paces)
 
 ## Proposed Additional Features
 
@@ -74,15 +75,7 @@ This document outlines potential additional running-related calculations that co
 - **Output:** TSS value and training load
 - **Use Case:** Managing training load and recovery
 
-### 10. McMillan Running Calculator
-**Priority: High**
-- Predict race time equivalences.
-- Provide training pace recommendations based on McMillan's methodology.
-- **Input:** current race distance and time
-- **Output:** predicted times for other distances, training paces.
-- **Use Case:** Race planning and setting training paces.
-
-### 11. Tinman (Tom Schwartz) Formulas
+### 10. Tinman (Tom Schwartz) Formulas
 **Priority: Medium**
 - Calculate training paces based on Critical Velocity.
 - Offer an alternative to Daniels' and McMillan's training zones.
@@ -90,7 +83,7 @@ This document outlines potential additional running-related calculations that co
 - **Output:** training paces (Easy, Marathon, CV, etc.)
 - **Use Case:** Alternative training pace guidance.
 
-### 12. Treadmill Pace and Incline Conversions
+### 11. Treadmill Pace and Incline Conversions
 **Priority: Low**
 - Convert treadmill paces to equivalent outdoor running paces.
 - Calculate the effect of treadmill incline on effort and equivalent flat-ground pace.
@@ -98,14 +91,14 @@ This document outlines potential additional running-related calculations that co
 - **Output:** Equivalent flat-ground pace (e.g., "min/km" or "min/mile")
 - **Use Case:** Accurately translate treadmill workouts to outdoor conditions.
 
-### 13. Race Fueling & Hydration Calculator
+### 12. Race Fueling & Hydration Calculator
 **Priority: Low**
 - Estimate carbohydrate and fluid needs for endurance races.
 - **Input:** Race distance or expected duration, runner's body weight.
 - **Output:** Recommended grams of carbohydrates per hour and fluid volume per hour.
 - **Use Case:** Help runners develop a fueling and hydration strategy to avoid bonking.
 
-### 14. Basic Training Plan Generator
+### 13. Basic Training Plan Generator
 **Priority: Low**
 - Generate a high-level, week-by-week training structure based on a goal race.
 - **Input:** Goal race distance, current fitness level (VDOT), weeks to train, days per week.
@@ -115,14 +108,13 @@ This document outlines potential additional running-related calculations that co
 ## Implementation Notes
 
 ### Recommended Implementation Order
-1. **McMillan Running Calculator** (High priority, core feature)
-2. **Tinman (Tom Schwartz) Formulas** (Provides an alternative training philosophy)
-3. **VO2 Max Estimation** (Natural extension of existing VDOT work)
-4. **Age-Graded Performance** (Popular and high-value feature)
-5. **Split Time Calculator** (Practical tool for race prep)
-6. **Heart Rate Zones** (Karvonen, etc. - another core training tool)
-7. **Calorie Burn Calculator** (General fitness appeal)
-8. The remaining low-priority items, with the **Basic Training Plan Generator** last due to its complexity.
+1. **Tinman (Tom Schwartz) Formulas** (Provides an alternative training philosophy)
+2. **VO2 Max Estimation** (Natural extension of existing VDOT work)
+3. **Age-Graded Performance** (Popular and high-value feature)
+4. **Split Time Calculator** (Practical tool for race prep)
+5. **Heart Rate Zones** (Karvonen, etc. - another core training tool)
+6. **Calorie Burn Calculator** (General fitness appeal)
+7. The remaining low-priority items, with the **Basic Training Plan Generator** last due to its complexity.
 
 ### Technical Considerations
 - Maintain consistency with existing API patterns

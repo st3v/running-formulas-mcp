@@ -120,37 +120,3 @@ def mph_to_kmh(speed_mph: float) -> float:
     # 1 mile = 1.609344 km
     return speed_mph * 1.609344
 
-
-def parse_pace_string(pace_str: str) -> float:
-    """
-    Parse a pace string in MM:SS or M:SS format to decimal minutes.
-
-    Args:
-        pace_str: Pace string in format "M:SS" or "MM:SS".
-
-    Returns:
-        float: Pace in decimal minutes.
-
-    Raises:
-        ValueError: If the pace string format is invalid.
-    """
-    try:
-        if ':' not in pace_str:
-            raise ValueError("Pace must be in M:SS or MM:SS format")
-
-        parts = pace_str.split(':')
-        if len(parts) != 2:
-            raise ValueError("Pace must be in M:SS or MM:SS format")
-
-        minutes = int(parts[0])
-        seconds = int(parts[1])
-
-        if seconds >= 60:
-            raise ValueError("Seconds must be less than 60")
-
-        return minutes + (seconds / 60.0)
-
-    except (ValueError, IndexError) as e:
-        raise ValueError(f"Invalid pace format '{pace_str}': {e}")
-
-

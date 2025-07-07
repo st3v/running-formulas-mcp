@@ -1,6 +1,11 @@
 # Core MCP dependencies
 fastmcp>=2.10.1
 
+# McMillan formula dependencies
+numpy>=1.24.0
+joblib>=1.3.0
+
 # Development dependencies (optional)
 pytest>=8.0.0
+pytest-cov>=6.2.1
 ruff>=0.0.290
