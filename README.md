@@ -1,50 +1,103 @@
 
 # running-formulas-mcp MCP server
 
-An MCP server with tools for running calculations including VDOT, training paces, race time predictions, and pace conversions based on [Jack Daniels](https://www.coacheseducation.com/endur/jack-daniels-nov-00.php) methodology and others.
+An MCP server with comprehensive tools for running calculations including VDOT, training paces, race time predictions, velocity markers, heart rate zones, and pace conversions. Supports multiple methodologies including [Jack Daniels](https://www.coacheseducation.com/endur/jack-daniels-nov-00.php), [Greg McMillan](https://www.mcmillanrunning.com/), and Riegel's formula.
 
 ## Features
 
-- **VDOT Calculation**: Calculate VDOT from a given distance (meters) and time (seconds) using Jack Daniels' formula.
-- **Training Paces**: Get recommended training paces (Easy, Marathon, Threshold, Interval, Repetition) for a given VDOT.
-- **Race Time Predictions**: Predict race times for different distances using Riegel's formula and Jack Daniels' VDOT method.
-- **Pace Conversions**: Convert between different pace and speed formats (min/km, min/mile, km/h, mph).
+### Jack Daniels Methodology
+- **VDOT Calculation**: Calculate VDOT from race performance using Jack Daniels' formula
+- **Training Paces**: Get recommended training paces (Easy, Marathon, Threshold, Interval, Repetition) for a given VDOT
+- **Race Time Predictions**: Predict race times using Jack Daniels' equivalent performance methodology
+
+### McMillan Methodology
+- **Velocity Markers**: Calculate vLT (Lactate Threshold), CV (Critical Velocity), and vVO2 (VO2max velocity)
+- **Training Paces**: Comprehensive training pace zones (Endurance, Stamina, Speed, Sprint) with sub-categories
+- **Race Time Predictions**: Predict race times for all standard distances using McMillan's methodology
+- **Heart Rate Zones**: Calculate training heart rate zones using multiple estimation formulas
+
+### Additional Tools
+- **Riegel's Formula**: Race time predictions using Riegel's power law
+- **Pace Conversions**: Convert between different pace and speed formats (min/km, min/mile, km/h, mph)
 
 ## Tools
 
-- `calculate_vdot`: Returns VDOT for a given distance and time.
+### Jack Daniels Tools
+
+- `daniels_calculate_vdot`: Calculate VDOT from race performance using Jack Daniels' formula.
   - **Input:**
-    - `distance` (number, meters)
-    - `time` (number, seconds)
+    - `distance` (float): Distance in meters
+    - `time` (float): Time in seconds
   - **Output:**
     - `vdot` (float): The calculated VDOT value
 
-- `training_paces`: Returns recommended paces for a given VDOT.
+- `daniels_calculate_training_paces`: Get recommended training paces for a given VDOT.
   - **Input:**
-    - `vdot` (number)
+    - `vdot` (float): VDOT value
   - **Output:**
-    - Structured pace data with value and format for each training zone:
-      - `easy` (object): Lower and upper bounds for easy pace range
-      - `marathon` (object): Marathon pace
-      - `threshold` (object): Threshold pace
-      - `interval` (object): Interval pace
-      - `repetition` (object): Repetition pace
-    - All paces include both `value` (formatted as "min:sec/km") and `format` fields
+    - `easy` (object): Easy pace range with lower and upper bounds
+    - `marathon` (object): Marathon pace
+    - `threshold` (object): Threshold pace
+    - `interval` (object): Interval pace
+    - `repetition` (object): Repetition pace
+    - All paces formatted as "MM:SS/km"
 
-- `predict_race_time`: Predicts race times for different distances based on a current performance.
+- `daniels_predict_race_time`: Predict race time using Jack Daniels' equivalent performance methodology.
   - **Input:**
-    - `current_distance` (number, meters)
-    - `current_time` (number, seconds)
-    - `target_distance` (number, meters)
+    - `current_distance` (float): Distance of known performance in meters
+    - `current_time` (float): Time of known performance in seconds
+    - `target_distance` (float): Distance for race time prediction in meters
   - **Output:**
-    - `riegel` (object): Prediction using Riegel's formula with value, format, and time_seconds
-    - `daniels` (object): Prediction using Jack Daniels' VDOT method with value, format, and time_seconds
-    - `average` (object): Average of both methods with value, format, and time_seconds
-    - All times formatted as "HH:MM:SS"
+    - `value` (string): Predicted time in "HH:MM:SS" format
+    - `format` (string): "HH:MM:SS"
+    - `time_seconds` (float): Time in seconds
 
-- `convert_pace`: Converts between different pace and speed units.
+### McMillan Tools
+
+- `mcmillan_calculate_velocity_markers`: Calculate velocity markers (vLT, CV, vVO2) from race performance.
   - **Input:**
-    - `value` (number): The numeric value to convert
+    - `distance` (float): Race distance in meters
+    - `time` (float): Race time in seconds
+  - **Output:**
+    - `velocity_markers` (object): Contains vLT, CV, and vVO2 with pace and description
+
+- `mcmillan_predict_race_times`: Predict race times for standard distances using McMillan methodology.
+  - **Input:**
+    - `distance` (float): Race distance in meters
+    - `time` (float): Race time in seconds
+  - **Output:**
+    - Dictionary with predicted times for all standard race distances
+
+- `mcmillan_calculate_training_paces`: Calculate comprehensive training paces using McMillan methodology.
+  - **Input:**
+    - `distance` (float): Race distance in meters
+    - `time` (float): Race time in seconds
+  - **Output:**
+    - Training paces organized by zones (endurance, stamina, speed, sprint)
+
+- `mcmillan_heart_rate_zones`: Calculate heart rate training zones.
+  - **Input:**
+    - `age` (int): Runner's age in years
+    - `resting_heart_rate` (int): Resting heart rate in BPM
+    - `max_heart_rate` (int, optional): Maximum heart rate in BPM
+  - **Output:**
+    - Heart rate zones with both HRMAX and HRRESERVE calculations
+
+### Additional Tools
+
+- `riegel_predict_race_time`: Predict race time using Riegel's formula.
+  - **Input:**
+    - `current_distance` (float): Distance of known performance in meters
+    - `current_time` (float): Time of known performance in seconds
+    - `target_distance` (float): Distance for race time prediction in meters
+  - **Output:**
+    - `value` (string): Predicted time in "HH:MM:SS" format
+    - `format` (string): "HH:MM:SS"
+    - `time_seconds` (float): Time in seconds
+
+- `convert_pace`: Convert between different pace and speed units.
+  - **Input:**
+    - `value` (float): The numeric value to convert
     - `from_unit` (string): Source unit ("min_km", "min_mile", "kmh", "mph")
     - `to_unit` (string): Target unit ("min_km", "min_mile", "kmh", "mph")
   - **Output:**
@@ -58,69 +111,106 @@ This server is designed to be used as an MCP stdio server. It does not expose HT
 
 ### Example: Calculate VDOT for a 5k in 25 minutes
 
-Call the `calculate_vdot` tool with:
+Call the `daniels_calculate_vdot` tool with:
 
-```
+```json
 {
-  "name": "calculate_vdot",
+  "name": "daniels_calculate_vdot",
   "arguments": { "distance": 5000, "time": 1500 }
+}
+```
+
+Returns:
+```json
+{
+  "vdot": 38.4
 }
 ```
 
 ### Example: Get training paces for VDOT 38.4
 
-Call the `training_paces` tool with:
+Call the `daniels_calculate_training_paces` tool with:
 
-```
+```json
 {
-  "name": "training_paces",
+  "name": "daniels_calculate_training_paces",
   "arguments": { "vdot": 38.4 }
 }
 ```
 
-This returns structured pace data like:
+Returns structured pace data like:
 ```json
 {
   "easy": {
-    "lower": {"value": "5:42", "format": "min:sec/km"},
-    "upper": {"value": "6:29", "format": "min:sec/km"}
+    "lower": {"value": "5:42", "format": "MM:SS/km"},
+    "upper": {"value": "6:29", "format": "MM:SS/km"}
   },
-  "marathon": {"value": "5:07", "format": "min:sec/km"},
-  "threshold": {"value": "4:50", "format": "min:sec/km"},
-  "interval": {"value": "4:32", "format": "min:sec/km"},
-  "repetition": {"value": "4:26", "format": "min:sec/km"}
+  "marathon": {"value": "5:07", "format": "MM:SS/km"},
+  "threshold": {"value": "4:50", "format": "MM:SS/km"},
+  "interval": {"value": "4:32", "format": "MM:SS/km"},
+  "repetition": {"value": "4:26", "format": "MM:SS/km"}
 }
 ```
 
-### Example: Predict 10K time from 5K performance
+### Example: Calculate McMillan velocity markers from 5K performance
 
-Call the `predict_race_time` tool with:
+Call the `mcmillan_calculate_velocity_markers` tool with:
 
-```
+```json
 {
-  "name": "predict_race_time",
+  "name": "mcmillan_calculate_velocity_markers",
+  "arguments": { "distance": 5000, "time": 1500 }
+}
+```
+
+Returns velocity markers:
+```json
+{
+  "velocity_markers": {
+    "vLT": {
+      "pace": "4:50",
+      "description": "Velocity at Lactate Threshold (vLT) - sustainable pace for ~1 hour"
+    },
+    "CV": {
+      "pace": "4:32",
+      "description": "Critical Velocity (CV) - theoretical maximum sustainable pace"
+    },
+    "vVO2": {
+      "pace": "4:15",
+      "description": "Velocity at VO2max (vVO2) - pace at maximum oxygen uptake"
+    }
+  }
+}
+```
+
+### Example: Predict 10K time using Daniels methodology
+
+Call the `daniels_predict_race_time` tool with:
+
+```json
+{
+  "name": "daniels_predict_race_time",
   "arguments": { "current_distance": 5000, "current_time": 1500, "target_distance": 10000 }
 }
 ```
 
-This returns race time predictions:
+Returns:
 ```json
 {
-  "riegel": {
-    "value": "00:52:07",
-    "format": "HH:MM:SS",
-    "time_seconds": 3127.4
-  },
-  "daniels": {
-    "value": "00:47:36", 
-    "format": "HH:MM:SS",
-    "time_seconds": 2856.6
-  },
-  "average": {
-    "value": "00:49:52",
-    "format": "HH:MM:SS", 
-    "time_seconds": 2992.0
-  }
+  "value": "00:52:07",
+  "format": "HH:MM:SS",
+  "time_seconds": 3127.4
+}
+```
+
+### Example: Calculate heart rate zones for a 30-year-old
+
+Call the `mcmillan_heart_rate_zones` tool with:
+
+```json
+{
+  "name": "mcmillan_heart_rate_zones",
+  "arguments": { "age": 30, "resting_heart_rate": 60, "max_heart_rate": 190 }
 }
 ```
 
@@ -128,14 +218,14 @@ This returns race time predictions:
 
 Call the `convert_pace` tool with:
 
-```
+```json
 {
   "name": "convert_pace",
   "arguments": { "value": 5.0, "from_unit": "min_km", "to_unit": "min_mile" }
 }
 ```
 
-This returns the converted pace:
+Returns:
 ```json
 {
   "value": 8.047,
